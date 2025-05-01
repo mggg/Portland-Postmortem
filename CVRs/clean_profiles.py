@@ -1,6 +1,6 @@
 
 from votekit.cvr_loaders import load_csv
-from votekit.cleaning import remove_cand, remove_repeated_candidates
+from votekit.cleaning import remove_cand, remove_repeated_candidates, condense_profile
 from votekit.elections import STV
 from votekit.utils import first_place_votes
 import pickle, requests, csv
@@ -60,11 +60,16 @@ for d in range(1,5):
     print(f"Cleaning district {d} profile with VoteKit")
     profile = load_csv(f"./raw_votekit_csv/Portland_D{d}_raw_votekit_format.csv", rank_cols=[1,2,3,4,5,6]) 
     writeins = [c for c in profile.candidates if 'Write-in-' in c]
-    profile = remove_cand(["skipped", "overvote"] + writeins, profile)
-    profile = remove_repeated_candidates(profile)
+    profile = condense_profile(remove_cand(["skipped", "overvote"] + writeins, profile))
+    profile = condense_profile(remove_repeated_candidates(profile))
 
     print(f"Computing district {d} results with VoteKit")
     election = STV(profile, m=3)
+    # TODO district 2,3 has weird problem where STV fails at certain stage
+    # due to a ballot without ranking
+    # but the OG profile has no such ballots
+    # D4 works but yields: UserWarning: Profile does not contain rankings but max_ranking_length=6. Setting max_ranking_length to 0.
+    # so somewhere the rankings are going off
 
     winner_set_match = set([c for s in election.get_elected() for c in s]) == set(results[d]["winner set"])
     threshold_match = election.threshold == results[d]["threshold"]
