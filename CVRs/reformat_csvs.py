@@ -27,7 +27,7 @@ for district, file_id in district_to_file.items():
             num_votes_cast = row[rank_columns[rank_position]].sum()
 
             if num_votes_cast == 0:
-                cast_vote = "skipped"
+                cast_vote = ""
             
             elif num_votes_cast > 1:
                 cast_vote = "overvote"

@@ -4,6 +4,7 @@ from votekit.cleaning import remove_cand, remove_repeated_candidates, condense_p
 from votekit.elections import STV
 from votekit.utils import first_place_votes
 import pickle, requests, csv
+import time
 
 
 official_tabulation_urls = {1:"https://mcdcselectionsrcvprdst.z5.web.core.windows.net/a18a5db1-04a2-4123-8ccb-de12b485f135_City%20of%20Portland%20Councilor%20District%201/2024-12-02_15-04-43_report_official.csv",
@@ -56,12 +57,14 @@ for d in range(1,5):
 
 print()
 
+
 for d in range(1,5):
     print(f"Cleaning district {d} profile with VoteKit")
     profile = load_csv(f"./raw_votekit_csv/Portland_D{d}_raw_votekit_format.csv", rank_cols=[1,2,3,4,5,6]) 
     writeins = [c for c in profile.candidates if 'Write-in-' in c]
-    profile = condense_profile(remove_cand(["skipped", "overvote"] + writeins, profile))
+    profile = condense_profile(remove_cand(["overvote"] + writeins, profile))
     profile = condense_profile(remove_repeated_candidates(profile))
+    print("cleaned")
 
     print(f"Computing district {d} results with VoteKit")
     election = STV(profile, m=3)
@@ -79,10 +82,9 @@ for d in range(1,5):
 
     if not threshold_match or not fpv_match or not winner_set_match:
         raise ValueError(f"One of threshold {threshold_match}, fpv {fpv_match}, or winner set {winner_set_match} does not match official results")
-    else:
-        print(f"VoteKit data for District {d} matches official results. Saving profile.")
-        with open(f"./cleaned_votekit_profiles/Portland_D{d}_cleaned_votekit_pref_profile.pkl", "wb") as f:
-            pickle.dump(profile, f)
+
+    print(f"VoteKit data for District {d} matches official results. Saving profile.")
+    profile.to_pickle(f"./cleaned_votekit_profiles/Portland_D{d}_cleaned_votekit_pref_profile.pkl")
 
     print("\n-------------------------------------------------\n")
 
